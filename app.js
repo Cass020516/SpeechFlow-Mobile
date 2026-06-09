@@ -2654,11 +2654,8 @@
     if (state._topicAbortController) state._topicAbortController.abort();
     state._topicAbortController = new AbortController();
     state._prefetchPromise = null;
-    // Get permission early (prevent prompt during recording), stop immediately to avoid ambient noise
+    // Release any previous mic stream before acquiring fresh one at recording start
     stopMic();
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s) {
-      s.getTracks().forEach(function(t) { t.stop(); });
-    }).catch(function() {});
     prefetchTopic();
   }
 
