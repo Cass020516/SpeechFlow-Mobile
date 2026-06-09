@@ -1630,8 +1630,12 @@
     dom['recording-indicator'].textContent = t('recording.recording');
 
     try {
-      state.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-      state._micStream = state.stream;
+      if (state._micStream && state._micStream.active) {
+        state.stream = state._micStream;
+      } else {
+        state.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+        state._micStream = state.stream;
+      }
       const audioType = getAudioType();
       state.mediaRecorder = new MediaRecorder(state.stream, { mimeType: audioType });
       state.mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) state.audioChunks.push(e.data); };
@@ -2654,8 +2658,10 @@
     if (state._topicAbortController) state._topicAbortController.abort();
     state._topicAbortController = new AbortController();
     state._prefetchPromise = null;
-    // Release any previous mic stream before acquiring fresh one at recording start
     stopMic();
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }).then(function(s) {
+      state._micStream = s;
+    }).catch(function() {});
     prefetchTopic();
   }
 
