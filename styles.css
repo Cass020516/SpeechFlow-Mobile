@@ -120,7 +120,8 @@ body.scene-campus .tag:hover { border-color: #d97706; background: #fef3c7; }
 body.scene-campus .tag.active { background: #d97706; color: #fff; border-color: #d97706; }
 
 /* ======== Calendar, Trend, Notes, Profile ======== */
-#calendar-card, #trend-card, #advice-card { overflow: hidden; }
+#calendar-card, #trend-card { overflow: hidden; }
+#advice-card { overflow: visible; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; width: 100%; min-width: 0; }
 .calendar-day { min-height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 13px; font-weight: 500; color: #334155; background: #f8fafc; flex-direction: column; min-width: 0; gap: 0; }
 .calendar-day.header { font-weight: 700; color: #475569; font-size: 14px; background: transparent; }
@@ -382,8 +383,9 @@ body.scene-campus .home-subtitle-en { color: #a16207; }
 #score-chart { display: block; }
 
 /* Analysis */
-.analysis-result { margin-bottom: 12px; padding: 12px; background: #f8fafc; border-radius: 10px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
+.analysis-result { margin-bottom: 12px; padding: 12px; background: #f8fafc; border-radius: 10px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-y: auto; max-height: 400px; }
 .analysis-result:empty { display: none; }
+.advice-text { white-space: pre-wrap; font-size: 14px; line-height: 1.7; font-family: inherit; margin: 0; overflow-y: auto; max-height: 400px; }
 
 /* ======== Phase Pages ======== */
 .phase-body { overflow-y: auto; flex: 1; padding: 32px 20px; -webkit-overflow-scrolling: touch; }

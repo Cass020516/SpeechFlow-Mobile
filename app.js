@@ -3224,10 +3224,10 @@
     try {
       var result = await callAPI([{ role: 'user', content: prompt }], { temperature: 0.7, max_tokens: 500 });
       var cleanResult = result.replace(/\*\*(.*?)\*\*/g, '$1').replace(/^[-*]\s/gm, '• ').replace(/^#+\s*/gm, '');
-      if (content) content.innerHTML = '<pre style="white-space:pre-wrap;font-size:14px;line-height:1.7;font-family:inherit;margin:0">' + cleanResult + '</pre>';
+      if (content) content.innerHTML = '<div class="advice-text">' + cleanResult + '</div>';
     } catch (err) {
       var msg = err.message || String(err);
-      if (content) content.innerHTML = '<p style="white-space:pre-wrap;font-size:14px;line-height:1.7;font-family:inherit">' + msg + '</p>';
+      if (content) content.innerHTML = '<p class="advice-text">' + msg + '</p>';
     }
     if (btn) btn.disabled = false;
   }
