@@ -1630,7 +1630,7 @@
     dom['recording-indicator'].textContent = t('recording.recording');
 
     try {
-      state.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      state.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       state._micStream = state.stream;
       const audioType = getAudioType();
       state.mediaRecorder = new MediaRecorder(state.stream, { mimeType: audioType });
