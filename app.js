@@ -1549,12 +1549,6 @@
     switchPhase('preparation');
     prepPaused = false;
     dom['btn-pause-prep'].textContent = t('prep.pause');
-    // Warm up microphone in preparation
-    if (!state._micStream) {
-      navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s) {
-        state._micStream = s;
-      }).catch(function() {});
-    }
     const total = state.config.prepTime;
     if (total <= 0) { startRecording(); return; }
     dom['prep-countdown'].textContent = total;
@@ -1636,12 +1630,8 @@
     dom['recording-indicator'].textContent = t('recording.recording');
 
     try {
-      if (state._micStream && state._micStream.active) {
-        state.stream = state._micStream;
-      } else {
-        state.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        state._micStream = state.stream;
-      }
+      state.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      state._micStream = state.stream;
       const audioType = getAudioType();
       state.mediaRecorder = new MediaRecorder(state.stream, { mimeType: audioType });
       state.mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) state.audioChunks.push(e.data); };
@@ -2664,10 +2654,10 @@
     if (state._topicAbortController) state._topicAbortController.abort();
     state._topicAbortController = new AbortController();
     state._prefetchPromise = null;
-    // Always get fresh microphone permission
+    // Get permission early (prevent prompt during recording), stop immediately to avoid ambient noise
     stopMic();
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s) {
-      state._micStream = s;
+      s.getTracks().forEach(function(t) { t.stop(); });
     }).catch(function() {});
     prefetchTopic();
   }
