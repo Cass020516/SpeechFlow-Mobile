@@ -1381,7 +1381,8 @@
   function showTopic() {
     dom['topic-loading'].classList.add('hidden');
     dom['topic-content'].classList.remove('hidden');
-    dom['topic-category'].textContent = state.topicCategory;
+    var catLabels = (I18N[uiLang] && I18N[uiLang]['topic.categories']) || I18N['zh-CN']['topic.categories'];
+    dom['topic-category'].textContent = catLabels[state.topicCategory] || state.topicCategory;
     dom['topic-text'].textContent = state.topic;
   }
 
