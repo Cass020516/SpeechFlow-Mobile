@@ -1548,6 +1548,11 @@
     switchPhase('preparation');
     prepPaused = false;
     dom['btn-pause-prep'].textContent = t('prep.pause');
+    if (!state._micStream) {
+      navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }).then(function(s) {
+        state._micStream = s;
+      }).catch(function() {});
+    }
     const total = state.config.prepTime;
     if (total <= 0) { startRecording(); return; }
     dom['prep-countdown'].textContent = total;
@@ -2658,9 +2663,6 @@
     state._topicAbortController = new AbortController();
     state._prefetchPromise = null;
     stopMic();
-    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }).then(function(s) {
-      state._micStream = s;
-    }).catch(function() {});
     prefetchTopic();
   }
 
