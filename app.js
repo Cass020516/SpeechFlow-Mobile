@@ -789,20 +789,63 @@
         data[k.slice(prefix.length)] = localStorage.getItem(k);
       }
     }
-    // Also include shared keys
     ['uiLang', 'theme_mode', 'current_user'].forEach(function(k) {
       if (localStorage.getItem(k)) data['__shared_' + k] = localStorage.getItem(k);
     });
     return data;
   }
+
+  async function exportAudioData() {
+    var prefix = currentUser() + '_';
+    var historyRaw = localStorage.getItem(prefix + 'practice_history');
+    if (!historyRaw) return null;
+    var history;
+    try { history = JSON.parse(historyRaw); } catch(_) { return null; }
+    var audioEntries = [];
+    for (var i = 0; i < history.length; i++) {
+      var id = history[i].audioId;
+      if (!id) continue;
+      var blob = await loadAudioFromDB(id);
+      if (!blob) continue;
+      var base64 = await blobToBase64(blob);
+      audioEntries.push({ id: id, data: base64, type: blob.type });
+    }
+    return audioEntries.length > 0 ? audioEntries : null;
+  }
+
+  function blobToBase64(blob) {
+    return new Promise(function(resolve) {
+      var reader = new FileReader();
+      reader.onloadend = function() { resolve(reader.result.split(',')[1]); };
+      reader.readAsDataURL(blob);
+    });
+  }
+
   function importUserData(data) {
     var prefix = currentUser() + '_';
     for (var k in data) {
+      if (k === '__audio_data') continue;
       if (k.startsWith('__shared_')) {
         localStorage.setItem(k.replace('__shared_', ''), data[k]);
       } else {
         localStorage.setItem(prefix + k, data[k]);
       }
+    }
+  }
+
+  async function importAudioData(audioData) {
+    if (!audioData || !audioData.length) return;
+    for (var i = 0; i < audioData.length; i++) {
+      var entry = audioData[i];
+      if (!entry.data) continue;
+      var byteChars = atob(entry.data);
+      var ab = new ArrayBuffer(byteChars.length);
+      var ia = new Uint8Array(ab);
+      for (var j = 0; j < byteChars.length; j++) {
+        ia[j] = byteChars.charCodeAt(j);
+      }
+      var blob = new Blob([ab], { type: entry.type || 'audio/webm' });
+      await saveAudioToDB(entry.id, blob);
     }
   }
 
@@ -3598,8 +3641,10 @@
       var btnImport = document.getElementById('btn-import-data');
       var fileInput = document.getElementById('import-file');
       if (btnExport) {
-        btnExport.addEventListener('click', function() {
+        btnExport.addEventListener('click', async function() {
           var data = exportUserData();
+          var audios = await exportAudioData();
+          if (audios) data.__audio_data = audios;
           var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
           var a = document.createElement('a');
           a.href = URL.createObjectURL(blob);
@@ -3613,10 +3658,12 @@
           var file = fileInput.files[0];
           if (!file) return;
           var reader = new FileReader();
-          reader.onload = function(e) {
+          reader.onload = async function(e) {
             try {
               var data = JSON.parse(e.target.result);
+              var audioData = data.__audio_data || null;
               importUserData(data);
+              if (audioData) await importAudioData(audioData);
               var statusEl = document.getElementById('import-status');
               if (statusEl) { statusEl.textContent = t('settings.import_done'); statusEl.style.color = '#10b981'; }
               setTimeout(function() { location.reload(); }, 1500);
