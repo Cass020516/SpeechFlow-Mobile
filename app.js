@@ -796,27 +796,32 @@
   }
 
   async function exportAudioData() {
-    var prefix = currentUser() + '_';
-    var historyRaw = localStorage.getItem(prefix + 'practice_history');
-    if (!historyRaw) return null;
-    var history;
-    try { history = JSON.parse(historyRaw); } catch(_) { return null; }
-    var audioEntries = [];
-    for (var i = 0; i < history.length; i++) {
-      var id = history[i].audioId;
-      if (!id) continue;
-      var blob = await loadAudioFromDB(id);
-      if (!blob) continue;
-      var base64 = await blobToBase64(blob);
-      audioEntries.push({ id: id, data: base64, type: blob.type });
-    }
-    return audioEntries.length > 0 ? audioEntries : null;
+    try {
+      var prefix = currentUser() + '_';
+      var historyRaw = localStorage.getItem(prefix + 'practice_history');
+      if (!historyRaw) return null;
+      var history;
+      try { history = JSON.parse(historyRaw); } catch(_) { return null; }
+      var audioEntries = [];
+      var db = await openAudioDB();
+      if (!db) return null;
+      for (var i = 0; i < history.length; i++) {
+        var id = history[i].audioId;
+        if (!id) continue;
+        var blob = await loadAudioFromDB(id);
+        if (!blob) continue;
+        var base64 = await blobToBase64(blob);
+        if (base64) audioEntries.push({ id: id, data: base64, type: blob.type });
+      }
+      return audioEntries.length > 0 ? audioEntries : null;
+    } catch(_) { return null; }
   }
 
   function blobToBase64(blob) {
     return new Promise(function(resolve) {
       var reader = new FileReader();
-      reader.onloadend = function() { resolve(reader.result.split(',')[1]); };
+      reader.onloadend = function() { resolve(reader.result ? reader.result.split(',')[1] : ''); };
+      reader.onerror = function() { resolve(''); };
       reader.readAsDataURL(blob);
     });
   }
@@ -835,17 +840,23 @@
 
   async function importAudioData(audioData) {
     if (!audioData || !audioData.length) return;
+    var db = await openAudioDB();
+    if (!db) return;
     for (var i = 0; i < audioData.length; i++) {
       var entry = audioData[i];
       if (!entry.data) continue;
-      var byteChars = atob(entry.data);
-      var ab = new ArrayBuffer(byteChars.length);
-      var ia = new Uint8Array(ab);
-      for (var j = 0; j < byteChars.length; j++) {
-        ia[j] = byteChars.charCodeAt(j);
-      }
-      var blob = new Blob([ab], { type: entry.type || 'audio/webm' });
-      await saveAudioToDB(entry.id, blob);
+      try {
+        var byteChars = atob(entry.data);
+        var ab = new ArrayBuffer(byteChars.length);
+        var ia = new Uint8Array(ab);
+        for (var j = 0; j < byteChars.length; j++) {
+          ia[j] = byteChars.charCodeAt(j);
+        }
+        var blob = new Blob([ab], { type: entry.type || 'audio/webm' });
+        var tx = db.transaction('audio', 'readwrite');
+        tx.objectStore('audio').put(blob, entry.id);
+        await new Promise(function(resolve) { tx.oncomplete = resolve; tx.onerror = resolve; });
+      } catch(_) {}
     }
   }
 
