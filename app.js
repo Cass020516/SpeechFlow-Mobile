@@ -1647,10 +1647,7 @@
       state.mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) state.audioChunks.push(e.data); };
       state.mediaRecorder.onstop = function() {
         state.audioBlob = new Blob(state.audioChunks, { type: audioType });
-        if (state.stream && state.stream !== state._micStream) {
-          state.stream.getTracks().forEach(function(t) { t.stop(); });
-        }
-        state.stream = null;
+        if (state.stream) { state.stream.getTracks().forEach(function(t) { t.stop(); }); state.stream = null; }
       };
       state.mediaRecorder.start();
     } catch (err) {
@@ -2640,11 +2637,16 @@
   // ============================
   //  Practice Navigation
   // ============================
+  function stopMic() {
+    if (state._micStream) { state._micStream.getTracks().forEach(function(t) { t.stop(); }); state._micStream = null; }
+    if (state.stream) { state.stream.getTracks().forEach(function(t) { t.stop(); }); state.stream = null; }
+  }
+
   function goHome() {
     stopTimer();
     stopSpeechRecognition();
     if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') state.mediaRecorder.stop();
-    if (state.stream && state.stream !== state._micStream) { state.stream.getTracks().forEach(function(t) { t.stop(); }); state.stream = null; }
+    stopMic();
     state.audioBlob = null;
     state.audioChunks = [];
     state.transcript = '';
@@ -2662,12 +2664,11 @@
     if (state._topicAbortController) state._topicAbortController.abort();
     state._topicAbortController = new AbortController();
     state._prefetchPromise = null;
-    // Warm up microphone permission in setup
-    if (!state._micStream) {
-      navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s) {
-        state._micStream = s;
-      }).catch(function() {});
-    }
+    // Always get fresh microphone permission
+    stopMic();
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s) {
+      state._micStream = s;
+    }).catch(function() {});
     prefetchTopic();
   }
 
@@ -2686,7 +2687,7 @@
     stopTimer();
     stopSpeechRecognition();
     if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') state.mediaRecorder.stop();
-    if (state.stream && state.stream !== state._micStream) { state.stream.getTracks().forEach(function(t) { t.stop(); }); state.stream = null; }
+    stopMic();
     state.audioBlob = null;
     state.audioChunks = [];
     state.transcript = '';
