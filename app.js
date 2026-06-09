@@ -1549,9 +1549,14 @@
     prepPaused = false;
     dom['btn-pause-prep'].textContent = t('prep.pause');
     if (!state._micStream) {
-      navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }).then(function(s) {
+      var micOpts = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
+      navigator.mediaDevices.getUserMedia(micOpts).then(function(s) {
         state._micStream = s;
-      }).catch(function() {});
+      }).catch(function() {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s) {
+          state._micStream = s;
+        }).catch(function() {});
+      });
     }
     const total = state.config.prepTime;
     if (total <= 0) { startRecording(); return; }
@@ -1606,6 +1611,14 @@
     return 'audio/webm';
   }
 
+  async function getUserMediaSafe() {
+    try {
+      return await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    } catch (_) {
+      return await navigator.mediaDevices.getUserMedia({ audio: true });
+    }
+  }
+
   async function startRecording() {
     stopTimer();
     initAudio();
@@ -1637,7 +1650,7 @@
       if (state._micStream && state._micStream.active) {
         state.stream = state._micStream;
       } else {
-        state.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+        state.stream = await getUserMediaSafe();
         state._micStream = state.stream;
       }
       const audioType = getAudioType();
