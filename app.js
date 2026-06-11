@@ -2939,8 +2939,12 @@
     var drawBtn = document.getElementById('btn-draw');
     if (drawBtn) { drawBtn.disabled = true; drawBtn.textContent = t('home.drawing'); }
     var ts = Date.now();
-    var avoid = _drawnTopics.length > 0 ? '\nPreviously shown (DO NOT repeat):\n' + _drawnTopics.slice(-3).join('\n') : '';
-    var prompt = 'Generate ONE short speech material (quote, news, or anecdote, 2-4 sentences) and translate it into 4 languages. Return JSON:\n{"texts":{"zh-CN":"...","en":"...","ja":"...","de":"..."},"source":"author/place"}\nVariation seed: ' + ts + avoid;
+    var prevDraws = loadJSON('draw_history', []);
+    var avoidTexts = prevDraws.slice(0, 10).map(function(h) {
+      return h.texts ? (h.texts['zh-CN'] || h.texts['en'] || '') : (h.text || '');
+    }).filter(function(t) { return t; }).join('\n');
+    var avoid = avoidTexts ? '\nAlready shown (DO NOT repeat):\n' + avoidTexts : '';
+    var prompt = 'Generate ONE short speech material (quote, news, or anecdote, 2-4 sentences) and translate it into 4 languages. Return JSON:\n{"texts":{"zh-CN":"...","en":"...","ja":"...","de":"..."},"source":"author/place"}\nSeed: ' + ts + avoid;
     callAPI([{ role: 'user', content: prompt }], { temperature: 0.95, max_tokens: 400 }).then(function(result) {
       var m = result.match(/\{[\s\S]*\}/);
       var texts = {}, source = '';
